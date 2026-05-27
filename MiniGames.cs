@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading;
 
 namespace BBBBBBBB.MiniGame
@@ -8,8 +9,9 @@ namespace BBBBBBBB.MiniGame
         public string name;
         public int id;
         public bool result;
+        public bool isGameRunning;
 
-        public MiniGames(string pname, int pid) { name = pname; id = pid; }
+        public MiniGames(string pname, int pid) { name = pname; id = pid; isGameRunning = false; }
         public bool GetResult() { return result; }
         public virtual void Game() => Console.WriteLine();
     }
@@ -35,7 +37,6 @@ namespace BBBBBBBB.MiniGame
     {
         private Random random = new Random();
         private Patient patient = new Patient();
-        private bool isGameRunning = false;
 
         private object lockObject = new object();
 
@@ -52,7 +53,8 @@ namespace BBBBBBBB.MiniGame
                     }
                     double randomval = random.Next(1, 10) / 10.0;
                     patient.Temperature += randomval;
-                    patient.BloodDark += random.Next(1, 11);
+                    patient.BloodDark += random.Next(1, 20);
+                    patient.Breath -= random.Next(1, 20);
                 }
                 Thread.Sleep(5000);
             }
@@ -73,18 +75,30 @@ namespace BBBBBBBB.MiniGame
             Thread statsThread = new Thread(UpdatePatientStats);
             statsThread.Start();
 
-            while ((DateTime.Now - startTime).TotalSeconds < 60 && isGameRunning)
+            while ((DateTime.Now - startTime).TotalSeconds < 30 && isGameRunning)
             {
                 lock (lockObject)
                 {
                     Console.SetCursorPosition(0, 1);
-                    Console.WriteLine(" Температура: " + patient.Temperature);
-                    Console.SetCursorPosition(0, 2);
-                    Console.WriteLine(" Дыхание: " + patient.Breath + "%");
+                    Console.WriteLine("  " + (int)(DateTime.Now - startTime).TotalSeconds + " | 30");
                     Console.SetCursorPosition(0, 3);
+                    Console.WriteLine(" Температура: " + patient.Temperature);
+                    Console.SetCursorPosition(0, 4);
+                    Console.WriteLine(" Дыхание: " + patient.Breath + "%");
+                    Console.SetCursorPosition(0, 5);
                     Console.WriteLine(" Очернение крови: " + patient.BloodDark + "%");
                     Console.WriteLine(" Смерть на: Температура > 41, Дыхание < 20, Очернение крови 80%");
                     Console.Write(" --------------------------------------------------------------------------\n 1 - Стимуляция/ОЧЕРНЕНИЕ КРОВИ/ (Очернение крови -15 | Температура + 0,5)\n 2 - Охлаждение/ТЕМПЕРАТУРА/ (Температура -1 | Дыхание -10)\n 3 - Искусственное дыхание/ДЫХАНИЕ/ (Дыхание +15 | Очернение крови +10)\n ");
+
+                    if ((DateTime.Now - startTime).TotalSeconds >= 25)
+                    {
+                        //lock (lockObject)
+                        //{
+                            patient.Temperature = 60; patient.Breath = 10; patient.BloodDark = 120;
+                        Console.WriteLine("\n !Резко подскочил уровень очернения крови!\n !Пациента вырвало чёрной субстанцией!");
+                        //}
+                        break;
+                    }
                 }
 
                 if (Console.KeyAvailable)
@@ -102,13 +116,7 @@ namespace BBBBBBBB.MiniGame
                     }
                 }
 
-                if ((DateTime.Now - startTime).TotalSeconds >= 55)
-                {
-                    lock (lockObject)
-                    {
-                        patient.Temperature = 60; patient.Breath = 10; patient.BloodDark = 120;
-                    }
-                }
+                
 
                 Thread.Sleep(700);
             }
@@ -116,7 +124,6 @@ namespace BBBBBBBB.MiniGame
             statsThread.Join();
         }
     }
-
     public class React : MiniGames
     {
         private static List<ConsoleKey> Sybmoli = new List<ConsoleKey>()
@@ -125,7 +132,6 @@ namespace BBBBBBBB.MiniGame
         };
         private Random random = new Random();
         private int streak;
-        private bool isGameRunning = false;
         private object lockObject = new object();
         ConsoleKey nowSymbol;
         private DateTime lastChange;
@@ -156,7 +162,6 @@ namespace BBBBBBBB.MiniGame
                 }
                 Thread.Sleep(1000);
             }
-            Console.WriteLine("Вы проиграли");
         }
 
         public override void Game()
@@ -202,6 +207,12 @@ namespace BBBBBBBB.MiniGame
                     Console.WriteLine("            |         |");
                     Console.WriteLine("             ---------");
                     Console.WriteLine("\nКОМБО: " + streak + " | 25");
+                    if (streak >= 25)
+                    {
+                        result = true;
+                        isGameRunning = false;
+                        break;
+                    }
                 }
 
                 if (Console.KeyAvailable)
@@ -227,14 +238,14 @@ namespace BBBBBBBB.MiniGame
                     }
                 }
             }
-            if (streak == 25) { result = true; } else { result = false; }
-
-            Thread.Sleep(3500);
+            isGameRunning = false;
+            statsThread.Join();
+            Thread.Sleep(2500);
             Console.Clear();
-            if (result) { Console.WriteLine("Замок открыт"); }
+            if (result) { Console.WriteLine(" |Замок открыт|"); }
             else
             {
-                Console.WriteLine("Замок заблокирован.\nПовторите попытку через 5 минут.");
+                Console.WriteLine(" |Замок заблокирован.|\n|Повторите попытку через 5 минут.|");
 
             }
             Console.WriteLine("Нажмите Enter, чтобы продолжить");
@@ -242,4 +253,96 @@ namespace BBBBBBBB.MiniGame
         }
 
     }
+    internal class SkipDialogs
+    {
+        public void Waiting_Next()
+        {
+            Console.ReadKey(true);
+            Console.Clear();
+        }
+        public void Typing(string text, int delayMs)
+        {
+            bool skipTyping = false;
+            Thread StopText = new Thread(() =>
+            {
+                Console.ReadKey(true);
+                skipTyping = true;
+            });
+            StopText.Start();
+
+            foreach (char ch in text)
+            {
+                if (skipTyping)
+                {
+                    Console.Write(text.Substring(text.IndexOf(ch)));
+                    break;
+                }
+                Console.Write(ch);
+                Thread.Sleep(delayMs);
+            }
+
+            Console.WriteLine();
+        }
+    }
+    public class ChoicesResultMG
+    {
+        SkipDialogs sd = new SkipDialogs();
+        bool result;
+        public ChoicesResultMG() {  result = false; }
+
+        public bool GetResult() {  return result; }
+        public void ChoiceA()
+        {
+            Console.Clear();
+            sd.Typing("Эмма подошла к крыльцу,пнула половичок.\n\nПод ковриком было пусто,только\nзаполоный паук резко помчался прочь\n\n- Ничего, - сказала она.\n\n - Тогда проверяй дальше,-бросила Диана.", 50);
+            Console.WriteLine("\n\nНажмите Enter, чтобы продолжить");
+            sd.Waiting_Next();
+        }
+        public void ChoiceB()
+        {
+            Console.Clear();
+            sd.Typing("Эмма потянулась к фонарю над дверью. Сняла с\nкрюка,заглянула внутрь.Среди паутины и сухих\nмух лежал старый чёрный ключ\n\n- Есть, - сказала она, вытряхивая находку.\n\n- Давай сюда,- Диана взяла ключ, вставила в замок.\nЗасов лязгнул", 50);
+            Console.WriteLine("\n\nНажмите Enter, чтобы продолжить");
+            sd.Waiting_Next();
+            result = true;
+        }
+        public void ChoiceC()
+        {
+            Console.Clear();
+            sd.Typing("Эмма отодвинула булыжник. Под ним - влажная земля,\nчерви, и больше ничего. На нижней стороне\nкамня она заметила какие-то странные царапины - символы,\nпохожие на детские каракули.\nПод ковриком было пусто,только\n\n- Ничего, - вздохнула она.- Только непонятные знаки\n\n- Не отвлекайся,- сказала Роня.", 50);
+            Console.WriteLine("\n\nНажмите Enter, чтобы продолжить");
+            sd.Waiting_Next();
+        }
+    }
+    public class ChoicesMiniGame : MiniGames
+    {
+        private ChoicesResultMG chresult = new ChoicesResultMG();
+        private object lockObject = new object();
+        public ChoicesMiniGame(string name, int id) : base(name, id) { }
+
+        public override void Game()
+        {
+            isGameRunning = true;
+            while (isGameRunning)
+            {
+                Console.Clear();
+                Console.WriteLine("A) Поднять коврик\nБ)Заглянуть в фонарь\nВ)Отодвинуть камень возле бочки");
+                ConsoleKeyInfo key = Console.ReadKey(true);
+                    lock (lockObject)
+                    {
+                        if (chresult.GetResult()) break;
+                        switch (key.KeyChar)
+                        {
+                            case 'А': chresult.ChoiceA(); break;
+                            case 'Б': chresult.ChoiceB(); break;
+                            case 'В': chresult.ChoiceC(); break;
+                        }
+                    }
+                if (chresult.GetResult()) { isGameRunning = false; }
+            }
+
+        }
+
+    }
+
 }
