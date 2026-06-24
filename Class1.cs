@@ -13,7 +13,9 @@ namespace бурмаджа_
         static void Main()
         {
             BaseText bt = new BaseText();
+            ChoiceManager cm = new ChoiceManager(bt);
             bt.TeWin2(0);
+            cm.PrintChoices(0);
         }
 
     }

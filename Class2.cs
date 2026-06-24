@@ -19,25 +19,64 @@ namespace бурмаджа_.choices
     }
     public class ChoiceManager
     {
-        int ChoiceResult;
+        private int ChoiceResult;
         private List<List<AlexeyChoice>> sceneChoices = new List<List<AlexeyChoice>>();
-        public ChoiceManager()
+        private HashSet<int> answeredQuestions = new HashSet<int>(); 
+        private BaseText baseText;
+        private int currentSceneIndex = 0;
+        private bool questionsCompleted = false;
+        public ChoiceManager(BaseText baseText)
         {
-            AlexeyChoice b1 = new AlexeyChoice("Эмма поворачивает стрелки.",1); AddChoices(b1, 0); //начало - к выбору а1
-            AlexeyChoice c = new AlexeyChoice("Эмма закрывает шкатулку и отказывается от этой идеи.", 2); AddChoices(c, 1); //начало - к выбору б1
-            AlexeyChoice endF1 = new AlexeyChoice("Эмма остаётся с пациентом. Диана, Роня и Динара идут в церковь.", 1); AddChoices(endF1, 2); //выбор а->концовка фели.
-            AlexeyChoice z1 = new AlexeyChoice("Эмма идёт с девочками. Пациент остаётся один.", 2); AddChoices(z1, 3); //выбор а1->загадка.
-            AlexeyChoice q1 = new AlexeyChoice("Что вы делаете здесь, в подвале?", 1); AddChoices(q1, 4); //вопросы в загадке.
-            AlexeyChoice qq1 = new AlexeyChoice("Как нам вернуться в своё время?", 2); AddChoices(qq1, 5); //вопросы в загадке.
-            AlexeyChoice qqq1 = new AlexeyChoice("Зачем вам всё это?", 3); AddChoices(qqq1, 6); //вопросы в загадке.
-            AlexeyChoice qqqq1 = new AlexeyChoice("Почему вы ждали именно нас?", 4); AddChoices(qqqq1, 7); //вопросы в загадке.
-            AlexeyChoice с1 = new AlexeyChoice("Согласиться помогать Фалексу.", 1); AddChoices(с1, 8); //выбор а1->загадка->выбор а2.
-            AlexeyChoice dEndR1 = new AlexeyChoice("Отказаться и действовать самостоятельно.", 2); AddChoices(dEndR1, 9); //выбор б1->загадка->концовка рони.
-            AlexeyChoice lineB1 = new AlexeyChoice("Немедленно идти в церковь. Оставить тело в подвале.", 1); AddChoices(lineB1, 10); //выбор б1->загадка.
-            AlexeyChoice endD1 = new AlexeyChoice("Немедленно отступать, оставив компонент.", 2); AddChoices(endD1, 11); //выбор б1->загадка->выбор а2(б)->концовка динары.
-            AlexeyChoice endG1 = new AlexeyChoice("Прорываться к ящику и забирать компонент..", 1); AddChoices(endG1, 12); //выбор б1->загадка->выбор а2(а)->концовка г.
+            this.baseText = baseText;
+            AlexeyChoice a = new AlexeyChoice("Эмма поворачивает стрелки.", 1);
+            AlexeyChoice b = new AlexeyChoice("Эмма закрывает шкатулку и отказывается от этой идеи.", 2);
+            AddChoices(a, 0);
+            AddChoices(b, 0);
+            AlexeyChoice endF = new AlexeyChoice("Эмма остаётся с пациентом. Диана, Роня и Динара идут в церковь.", 2);
+            AlexeyChoice z = new AlexeyChoice("Эмма идёт с девочками. Пациент остаётся один.", 3);
+            AddChoices(endF, 1);
+            AddChoices(z, 1);
+            AlexeyChoice q = new AlexeyChoice("Что вы делаете здесь, в подвале?", 4);
+            AlexeyChoice qq = new AlexeyChoice("Как нам вернуться в своё время?", 5);
+            AlexeyChoice qqq = new AlexeyChoice("Зачем вам всё это?", 6);
+            AlexeyChoice qqqq = new AlexeyChoice("Почему вы ждали именно нас?", 7);
+            AddChoices(q, 2);
+            AddChoices(qq, 2);
+            AddChoices(qqq, 2);
+            AddChoices(qqqq, 2);
+            AlexeyChoice c = new AlexeyChoice("Согласиться помогать Фалексу.", 8);
+            AlexeyChoice dEndR = new AlexeyChoice("Отказаться и действовать самостоятельно.", 9);
+            AddChoices(c, 3);
+            AddChoices(dEndR, 3);
+            AlexeyChoice endD = new AlexeyChoice("Немедленно отступать, оставив компонент.", 11);
+            AlexeyChoice endG = new AlexeyChoice("Прорываться к ящику и забирать компонент.", 12);
+            AddChoices(endD, 4);
+            AddChoices(endG, 4);
         }
-        public void AddChoices(AlexeyChoice scene, int a) //добавлять выборы.
+        private void OpenReactGame()
+        {
+            using (ReactGame reactGame = new ReactGame())
+            {
+                // Открываем как диалоговое окно
+                DialogResult result = reactGame.ShowDialog();
+
+                // Проверяем результат
+                if (result == DialogResult.OK)
+                {
+                    // Игрок выиграл
+                    MessageBox.Show("Поздравляю! Вы выиграли мини-игру!");
+                    // Здесь выполняем действия при победе
+                }
+                else if (result == DialogResult.Cancel)
+                {
+                    // Игрок проиграл
+                    MessageBox.Show("Вы проиграли. Попробуйте снова.");
+                    baseText.TeWin2(13);
+                    // Здесь выполняем действия при поражении
+                }
+            }
+        }
+        public void AddChoices(AlexeyChoice scene, int a)
         {
             if (sceneChoices.Count - 1 < a)
             {
